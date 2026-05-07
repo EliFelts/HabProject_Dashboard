@@ -215,7 +215,7 @@ status_pal <- colorFactor(
 
 # build the UI
 
-ui <- page_navbar(
+ui <- page_sidebar(
   title = "IDFG Fish Habitat Program Dashboard",
   theme = bs_theme(bootswatch = "flatly"),
   id = "nav",
@@ -324,64 +324,61 @@ ui <- page_navbar(
       )
     )
   ),
-  nav_panel(
-    "Main",
-    layout_columns(
-      col_widths = c(3, 6, 3),
-      class = "g-2",
-      value_box(
-        title = "Projects Overview",
-        uiOutput("project_overview"),
-        max_height = "200px"
-      ),
-      value_box(
-        title = "Evaluation Metrics",
-        uiOutput("eval_metrics"),
-        max_height = "200px"
-      ),
-      value_box(
-        title = "Funding Summary",
-        uiOutput("funding_summary"),
-        max_height = "200px"
-      )
+  layout_columns(
+    col_widths = c(3, 6, 3),
+    class = "g-2",
+    value_box(
+      title = "Projects Overview",
+      uiOutput("project_overview"),
+      max_height = "200px"
     ),
-    page_fillable(
-      layout_columns(
-        col_widths = c(8, 4),
-        card(card_header("Project Map"),
-          leafletOutput("project_map"),
-          height = "700px",
-          max_height = "700px",
-          full_screen = T
-        ),
-        card(
-          card_header(uiOutput("selected_project_header")),
-          navset_card_tab(
-            nav_panel(
-              "Overview",
-              uiOutput("selected_project_ui")
-            ),
-            nav_panel(
-              "Photos",
-              uiOutput("project_gallery_ui")
-            ),
-            nav_panel(
-              "Project Specific Map",
-              leafletOutput("project_specific_map")
-            ),
-            nav_panel(
-              "Permitting",
-              uiOutput("project_permitting_ui")
-            ),
-            nav_panel(
-              "Supporting Documents",
-              uiOutput("project_docs_ui")
-            )
+    value_box(
+      title = "Evaluation Metrics",
+      uiOutput("eval_metrics"),
+      max_height = "200px"
+    ),
+    value_box(
+      title = "Funding Summary",
+      uiOutput("funding_summary"),
+      max_height = "200px"
+    )
+  ),
+  page_fillable(
+    layout_columns(
+      col_widths = c(8, 4),
+      card(card_header("Project Map"),
+        leafletOutput("project_map"),
+        height = "700px",
+        max_height = "700px",
+        full_screen = T
+      ),
+      card(
+        card_header(uiOutput("selected_project_header")),
+        navset_card_tab(
+          nav_panel(
+            "Overview",
+            uiOutput("selected_project_ui")
           ),
-          height = "700px",
-          max_height = "700px",
-          full_screen = TRUE
-        )
+          nav_panel(
+            "Photos",
+            uiOutput("project_gallery_ui")
+          ),
+          nav_panel(
+            "Project Specific Map",
+            leafletOutput("project_specific_map")
+          ),
+          nav_panel(
+            "Permitting",
+            uiOutput("project_permitting_ui")
+          ),
+          nav_panel(
+            "Supporting Documents",
+            uiOutput("project_docs_ui")
+          )
+        ),
+        height = "700px",
+        max_height = "700px",
+        full_screen = TRUE
       )
     )
   )
