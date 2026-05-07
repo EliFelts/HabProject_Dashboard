@@ -413,3 +413,149 @@ pwalk(
     )
   }
 )
+
+# get a table of initial photo attributes
+
+photo_reference.table <- projects_raw |>
+  st_drop_geometry() |>
+  select(project_name, globalid, caption = photo_caption, credit) |>
+  left_join(initial_attachments, by = c("globalid" = "rel_globalid")) |>
+  select(project_name,
+    photo_file = att_name,
+    caption, credit
+  ) |>
+  filter(!is.na(photo_file))
+
+# now get photos from the update form
+
+
+# now work on getting photos out of the
+# file geodatabase downloads
+
+update_attachments <- st_read(update_gdb_path,
+  layer = "service_7804d53a55e54f47a168067_actions_photo_group__ATTACH",
+  as_tibble = TRUE
+)
+
+
+# write all these photos out
+
+pwalk(
+  list(update_attachments$data, update_attachments$att_name),
+  \(data, name) {
+    writeBin(
+      data,
+      file.path("www/project_photos", name)
+    )
+  }
+)
+
+# get a table of updated photo attachments
+
+implementations_raw <- st_read(update_gdb_path, layer = "implementation_action_group") |>
+  select(uniquerowid, parentrowid, implementation_action_annual) |>
+  inner_join(update_main.df, by = c("parentrowid" = "uniquerowid")) |>
+  select(uniquerowid, project_name, implementation_action_annual)
+
+update_photo_reference.table <- st_read(update_gdb_path, layer = "actions_photo_group") |>
+  inner_join(implementations_raw, by = c("parentrowid" = "uniquerowid")) |>
+  inner_join(update_attachments, by = c("globalid" = "rel_globalid")) |>
+  select(project_name,
+    photo_file = att_name, caption = photo_caption,
+    credit, implementation_action = implementation_action_annual
+  )
+
+photos.bind <- update_photo_reference.table |>
+  bind_rows(photo_reference.table)
+
+# Now prep projects for shiny format
+
+projects_shiny.df <- projects.df_export |>
+  select(globalid, project_name, idfg_trackingnumber, managing_org,
+    project_startdate, project_description, idfg_staff, latitude,
+    longitude, stream_name, LLID, idfg_region, fmp_drainage,
+    huc6, huc8, county, primary_species, secondary_species,
+    life_stage,
+    habitat_type = habitat_types, land_ownership,
+    partner_agency, guidance_docs, project_category, project_state,
+    award_amount, funding_source, barriers_removed, stream_miles_reconnected,
+    stream_miles_restored, floodplain_reconnect, enhancement_structures,
+    bda_count, riparian_area, streambank_linearfeet, flow_restored_miles,
+    wetland_acres
+  )
+
+# export
+
+saveRDS(projects_shiny.df, "shiny_pieces/project_table")
+
+saveRDS(photos.bind, "shiny_pieces/photo_table")
+
+project_docs <- tibble::tribble(
+  ~project_name, ~doc_type, ~doc_title, ~doc_file,
+  "Tower Creek Aquatic Organism Passage", "permit", "Example Permit PDF", "hatchr_copy.pdf",
+  "Tower Creek Aquatic Organism Passage", "permit", "Example Permit PDF 2", "Job_Description_-_Stock_Assessment_Scientist_-_March_2026.pdf"
+)
+
+saveRDS(project_docs, "shiny_pieces/project_documents.rds")
+
+# Here, pull together project specific points for those
+# examples where there is more than one point of
+# interest such as culvert removals, AOP evals, etc.
+
+# right now the AOP points just coming over via excel sheet
+
+aop_pts1 <- read_excel("data-raw/AOP spokane2024sites_data to eli.xlsx",
+  sheet = "all sites"
+) %>%
+  mutate(
+    project_name = "Spokane River Watershed Aquatic Organism Passage Evaluation",
+    specifics_category = "AOP Evaluation"
+  ) %>%
+  st_as_sf(
+    coords = c(
+      "lon",
+      "lat"
+    ),
+    crs = st_crs(projects_shiny.df)
+  ) %>%
+  select(project_name, specifics_category,
+    year = Year
+  )
+
+# put the implementation actions that have their own waypoints
+# into similar format
+
+implementation_points <- implementations.df %>%
+  filter(!is.na(implementation_lat)) %>%
+  st_as_sf(
+    coords = c(
+      "implementation_long",
+      "implementation_lat"
+    ),
+    crs = st_crs(projects_shiny.df)
+  ) %>%
+  select(project_name,
+    specifics_category = implementation_type,
+    barrier_action_type,
+    year = reporting_year
+  ) %>%
+  bind_rows(aop_pts1)
+
+
+saveRDS(
+  implementation_points,
+  "shiny_pieces/project_specific_points.rds"
+)
+
+# make a layer of project-specific streams so
+# they can be highlighted on zoomed map
+
+project_streams.sf <- projects_shiny.df %>%
+  st_drop_geometry() %>%
+  select(project_name, LLID) %>%
+  left_join(idfg_streams.sf, by = "LLID") %>%
+  st_as_sf() %>%
+  group_by(project_name) %>%
+  slice_head(n = 1)
+
+saveRDS(project_streams.sf, "shiny_pieces/project_specific_streams")
