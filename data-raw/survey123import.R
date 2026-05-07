@@ -474,6 +474,7 @@ projects_shiny.df <- projects.df_export |>
   filter(pt_type == "real") |>
   select(globalid, project_name, idfg_trackingnumber, managing_org,
     project_startdate, project_description, idfg_staff,
+    email,
     latitude = primary_point_lat,
     longitude = primary_point_long, stream_name, LLID, idfg_region, fmp_drainage,
     huc6, huc8, county, primary_species, secondary_species,

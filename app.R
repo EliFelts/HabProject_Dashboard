@@ -96,7 +96,7 @@ species_vector <- projects.dat %>%
 
 # read in layers to have as toggles on the map
 
-hab_gpkg <- "data-raw/idfg_habitat_mapping.gpkg"
+hab_gpkg <- "shiny_pieces/idfg_habitat_mapping.gpkg"
 
 regions.sf <- st_read(
   dsn = hab_gpkg,
@@ -114,99 +114,75 @@ lakes.sf <- st_read(
 )
 
 
-counties.sf <- read_rds("data-raw/idaho_counties") %>%
-  st_transform(crs = st_crs(streams.sf))
-
-
-huc8.sf <- read_rds("data-raw/huc8") %>%
-  st_transform(crs = st_crs(streams.sf))
-
-fmp_regions.sf <- read_rds("data-raw/fmp_drainages.rds")
-
 # make base leaflet map
+make_leaflet_base <- function() {
+  leaflet() %>%
+    addProviderTiles(providers$Esri.WorldTopoMap, group = "Topographic") %>%
+    addProviderTiles(providers$Esri.WorldImagery, group = "Imagery") %>%
+    addProviderTiles(providers$OpenStreetMap.Mapnik, group = "Roads") %>%
+    setView(lng = -114.60938, lat = 45.30580, zoom = 6) %>%
+    addMouseCoordinates() %>%
+    addPolygons(
+      data = regions.sf,
+      fill = "grey", color = "black",
+      fillOpacity = 0.1,
+      group = "IDFG Regions",
+      popup = ~ str_c(region_name)
+    ) %>%
+    addPolygons(
+      data = lakes.sf,
+      label = ~ str_c(name),
+      group = "Lakes/Reservoirs"
+    ) %>%
+    addPolylines(
+      data = streams.sf,
+      label = ~ str_c(name),
+      group = "Streams"
+    ) %>%
+    addLayersControl(
+      baseGroups = c("Topographic", "Imagery", "Roads"),
+      overlayGroups = c(
+        "Streams", "Lakes/Reservoirs",
+        "IDFG Regions"
+      ),
+      options = layersControlOptions(collapsed = FALSE)
+    ) %>%
+    hideGroup(c(
+      "IDFG Regions"
+    )) %>%
+    addMiniMap(
+      tiles = providers$OpenStreetMap.Mapnik,
+      toggleDisplay = TRUE,
+      position = "bottomright",
+      width = 180,
+      height = 180,
+      zoomLevelOffset = -6
+    ) %>%
+    addResetMapButton()
+}
 
-leaflet_base <- leaflet() %>%
-  addProviderTiles(providers$Esri.WorldTopoMap, group = "Topographic") %>%
-  addProviderTiles(providers$Esri.WorldImagery, group = "Imagery") %>%
-  addProviderTiles(providers$OpenStreetMap.Mapnik, group = "Roads") %>%
-  setView(lng = -114.60938, lat = 45.30580, zoom = 6) %>%
-  addMouseCoordinates() %>%
-  addPolygons(
-    data = regions.sf,
-    fill = "grey", color = "black",
-    fillOpacity = 0.1,
-    group = "IDFG Regions",
-    popup = ~ str_c(region_name)
-  ) %>%
-  addPolygons(
-    data = fmp_regions.sf,
-    fill = "grey", color = "black",
-    fillOpacity = 0.1,
-    group = "FMP Drainages",
-    popup = ~ str_c(fmp_drainage)
-  ) |>
-  addPolygons(
-    data = counties.sf,
-    fill = "grey", color = "black",
-    fillOpacity = 0.1,
-    group = "Counties",
-    popup = ~ str_c(NAME, "County", sep = " ")
-  ) %>%
-  addPolygons(
-    data = lakes.sf,
-    label = ~ str_c(name),
-    group = "Lakes/Reservoirs"
-  ) %>%
-  addPolylines(
-    data = streams.sf,
-    label = ~ str_c(name),
-    group = "Streams"
-  ) %>%
-  addLayersControl(
-    baseGroups = c("Topographic", "Imagery", "Roads"),
-    overlayGroups = c(
-      "Streams", "Lakes/Reservoirs",
-      "IDFG Regions",
-      "FMP Drainages",
-      "Counties"
-    ),
-    options = layersControlOptions(collapsed = FALSE)
-  ) %>%
-  hideGroup(c(
-    "IDFG Regions",
-    "FMP Drainages",
-    "Counties"
-  )) %>%
-  addMiniMap(
-    tiles = providers$OpenStreetMap.Mapnik,
-    toggleDisplay = TRUE,
-    position = "bottomright",
-    width = 180,
-    height = 180,
-    zoomLevelOffset = -6
-  ) %>%
-  addResetMapButton()
-leaflet_base
+project_specific_streams <- read_rds("shiny_pieces/project_specific_streams.sf")
 
-project_specific_streams <- read_rds("shiny_pieces/project_specific_streams")
+make_leaflet_base2 <- function() {
+  leaflet() %>%
+    addProviderTiles(providers$Esri.WorldTopoMap, group = "Topographic") %>%
+    addProviderTiles(providers$Esri.WorldImagery, group = "Imagery") %>%
+    addProviderTiles(providers$OpenStreetMap.Mapnik, group = "Roads") %>%
+    addMouseCoordinates() %>%
+    addMiniMap(
+      tiles = providers$OpenStreetMap.Mapnik,
+      toggleDisplay = TRUE,
+      position = "bottomright",
+      width = 180,
+      height = 180,
+      zoomLevelOffset = -6
+    ) %>%
+    addLayersControl(
+      baseGroups = c("Topographic", "Imagery", "Roads"),
+      options = layersControlOptions(collapsed = FALSE)
+    )
+}
 
-leaflet_base2 <- leaflet() %>%
-  addProviderTiles(providers$Esri.WorldTopoMap, group = "Topographic") %>%
-  addProviderTiles(providers$Esri.WorldImagery, group = "Imagery") %>%
-  addProviderTiles(providers$OpenStreetMap.Mapnik, group = "Roads") %>%
-  addMouseCoordinates() %>%
-  addMiniMap(
-    tiles = providers$OpenStreetMap.Mapnik,
-    toggleDisplay = TRUE,
-    position = "bottomright",
-    width = 180,
-    height = 180,
-    zoomLevelOffset = -6
-  ) %>%
-  addLayersControl(
-    baseGroups = c("Topographic", "Imagery", "Roads"),
-    options = layersControlOptions(collapsed = FALSE)
-  )
 
 status_pal <- colorFactor(
   palette = c("#2C7FB8", "#2E7D32"),
@@ -215,7 +191,7 @@ status_pal <- colorFactor(
 
 # build the UI
 
-ui <- page_sidebar(
+ui <- page_navbar(
   title = "IDFG Fish Habitat Program Dashboard",
   theme = bs_theme(bootswatch = "flatly"),
   id = "nav",
@@ -267,6 +243,10 @@ ui <- page_sidebar(
       open = c("Project Filters", "Individual Projects"),
       accordion_panel(
         "Project Filters",
+        actionButton(
+          "reset_filters",
+          "Reset Filters"
+        ),
         pickerInput("primary_species_filter",
           label = "Select Primary Species Benefitted",
           choices = species_vector,
@@ -324,61 +304,64 @@ ui <- page_sidebar(
       )
     )
   ),
-  layout_columns(
-    col_widths = c(3, 6, 3),
-    class = "g-2",
-    value_box(
-      title = "Projects Overview",
-      uiOutput("project_overview"),
-      max_height = "200px"
-    ),
-    value_box(
-      title = "Evaluation Metrics",
-      uiOutput("eval_metrics"),
-      max_height = "200px"
-    ),
-    value_box(
-      title = "Funding Summary",
-      uiOutput("funding_summary"),
-      max_height = "200px"
-    )
-  ),
-  page_fillable(
+  nav_panel(
+    "Main",
     layout_columns(
-      col_widths = c(8, 4),
-      card(card_header("Project Map"),
-        leafletOutput("project_map"),
-        height = "700px",
-        max_height = "700px",
-        full_screen = T
+      col_widths = c(3, 6, 3),
+      class = "g-2",
+      value_box(
+        title = "Projects Overview",
+        uiOutput("project_overview"),
+        max_height = "200px"
       ),
-      card(
-        card_header(uiOutput("selected_project_header")),
-        navset_card_tab(
-          nav_panel(
-            "Overview",
-            uiOutput("selected_project_ui")
-          ),
-          nav_panel(
-            "Photos",
-            uiOutput("project_gallery_ui")
-          ),
-          nav_panel(
-            "Project Specific Map",
-            leafletOutput("project_specific_map")
-          ),
-          nav_panel(
-            "Permitting",
-            uiOutput("project_permitting_ui")
-          ),
-          nav_panel(
-            "Supporting Documents",
-            uiOutput("project_docs_ui")
-          )
+      value_box(
+        title = "Evaluation Metrics",
+        uiOutput("eval_metrics"),
+        max_height = "200px"
+      ),
+      value_box(
+        title = "Funding Summary",
+        uiOutput("funding_summary"),
+        max_height = "200px"
+      )
+    ),
+    page_fillable(
+      layout_columns(
+        col_widths = c(8, 4),
+        card(card_header("Project Map"),
+          leafletOutput("project_map"),
+          height = "700px",
+          max_height = "700px",
+          full_screen = T
         ),
-        height = "700px",
-        max_height = "700px",
-        full_screen = TRUE
+        card(
+          card_header(uiOutput("selected_project_header")),
+          navset_card_tab(
+            nav_panel(
+              "Overview",
+              uiOutput("selected_project_ui")
+            ),
+            nav_panel(
+              "Photos",
+              uiOutput("project_gallery_ui")
+            ),
+            nav_panel(
+              "Project Specific Map",
+              leafletOutput("project_specific_map")
+            ),
+            nav_panel(
+              "Permitting",
+              uiOutput("project_permitting_ui")
+            ),
+            nav_panel(
+              "Supporting Documents",
+              uiOutput("project_docs_ui")
+            )
+          ),
+          height = "700px",
+          max_height = "700px",
+          full_screen = TRUE
+        )
       )
     )
   )
@@ -597,7 +580,7 @@ server <- function(input, output, session) {
   output$project_map <- renderLeaflet({
     dat <- projects_reactive()
 
-    leaflet_base %>%
+    make_leaflet_base() %>%
       addCircleMarkers(
         data = dat,
         fillColor = ~ status_pal(project_status),
@@ -650,6 +633,13 @@ server <- function(input, output, session) {
       ),
       p(tags$b("Project Type: "), x$project_category),
       p(tags$b("IDFG Region: "), x$idfg_region),
+      p(
+        tags$b("IDFG Staff: "),
+        tags$a(
+          href = paste0("mailto:", x$email),
+          x$idfg_staff
+        )
+      ),
       p(tags$b("FMP Drainage: "), x$fmp_drainage),
       p(tags$b("County: "), x$county),
       p(tags$b("Primary Waterbody: "), x$stream_name),
@@ -939,7 +929,7 @@ server <- function(input, output, session) {
       9, 12
     )
 
-    leaflet_base2 %>%
+    make_leaflet_base2() %>%
       addPolylines(
         data = streams.sf,
         label = ~ str_c(name),
@@ -976,13 +966,13 @@ server <- function(input, output, session) {
     pdf_src <- file.path("project_docs", "permits", selected_doc())
 
     tagList(
-      tags$a(
-        href = pdf_src,
-        target = "_blank",
-        download = selected_doc(),
-        class = "btn btn-sm btn-primary",
-        "Download PDF"
-      ),
+      # tags$a(
+      #   href = pdf_src,
+      #   target = "_blank",
+      #   download = selected_doc(),
+      #   class = "btn btn-sm btn-primary",
+      #   "Download PDF"
+      # ),
       tags$iframe(
         src = pdf_src,
         style = "
@@ -1019,6 +1009,18 @@ server <- function(input, output, session) {
         )
       })
     )
+  })
+
+  observeEvent(input$reset_filters, {
+    updatePickerInput(session, "primary_species_filter", selected = species_vector)
+
+    updatePickerInput(session, "idfg_region_filter", selected = region_vector)
+
+    updatePickerInput(session, "managing_org_filter", selected = manager_vector)
+
+    updatePickerInput(session, "partner_filter", selected = partner_vector)
+
+    updatePickerInput(session, "projecttype_filter", selected = projecttype_vector)
   })
 
   # reset selected project when filters change
