@@ -185,10 +185,9 @@ make_leaflet_base2 <- function() {
 
 
 status_pal <- colorFactor(
-  palette = c("#2C7FB8", "#2E7D32"),
+  palette = c("#0072B2", "#E69F00"),
   levels = c("Completed", "Active")
 )
-
 # build the UI
 
 ui <- page_navbar(
