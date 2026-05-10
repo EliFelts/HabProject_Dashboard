@@ -639,6 +639,7 @@ server <- function(input, output, session) {
           x$idfg_staff
         )
       ),
+      p(tags$b("Partners: "), x$partner_agency),
       p(tags$b("FMP Drainage: "), x$fmp_drainage),
       p(tags$b("County: "), x$county),
       p(tags$b("Primary Waterbody: "), x$stream_name),
