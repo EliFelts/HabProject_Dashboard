@@ -158,7 +158,8 @@ make_leaflet_base <- function() {
       height = 180,
       zoomLevelOffset = -6
     ) %>%
-    addResetMapButton()
+    addResetMapButton() |>
+    addEasyprint()
 }
 
 project_specific_streams <- read_rds("shiny_pieces/project_specific_streams.sf")
